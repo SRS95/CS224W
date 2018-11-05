@@ -34,7 +34,6 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 	os.mkdir("../" + graph_name + '_' + graph_type)
 
 	cols = [source_col, dest_col]
-	if weighted: cols.append(weight_col)
 
 	df =  pd.read_csv(fname, usecols=cols, header=0)
 	df = df.dropna()
@@ -44,14 +43,14 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
-	np.save("../" + graph_name + "/node_id_to_vale", nodeIdToValue)
+	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_vale", nodeIdToValue)
 
 	# Create a tab separated representation of the graph
 	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
 	tabSeparatedGraph = createTabSeparatedGraph(data, valueToNodeId)
 
 	# Save the graph to the folder so that it can be loaded in the future
-	tabSeparatedGraphTitle = "../" + graph_name + '/' + graph_name + ".txt"
+	tabSeparatedGraphTitle = "../" + graph_name + '_' + graph_type + '/' + graph_name + ".txt"
 	np.savetxt(tabSeparatedGraphTitle, tabSeparatedGraph, fmt='%i', delimiter="\t")
 
 
