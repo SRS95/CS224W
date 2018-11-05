@@ -1,3 +1,15 @@
+'''
+Author: Sam Schwager
+Last Modified: 11/5/2018
+
+This scipt generates arbitrarily complex graphs from CSV files,
+giving users the flexibility to choose which columns from the
+CSV they want to be incorporated into the graph. Graphs are
+created using the SNAP.py library, and users are able to choose
+among the TUNGraph, TNGraph, and TNEANet graph/network types.
+'''
+
+
 import snap
 import numpy as np
 import pandas as pd
