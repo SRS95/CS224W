@@ -43,7 +43,7 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
-	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_vale", nodeIdToValue)
+	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create a tab separated representation of the graph
 	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
@@ -54,38 +54,126 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 	np.savetxt(tabSeparatedGraphTitle, tabSeparatedGraph, fmt='%i', delimiter="\t")
 
 
+
+def addNodeAttrs(G, attrs, data):
+	for key, value in attrs.iteritems():
+		attribute_type = value[1]
+		if attribute_type == 0:
+			G.AddIntAttrN(key)
+		elif attribute_type == 1:
+			G.AddIntAttrN(key)
+		elif attribute_type == 2:
+			G.AddIntAttrN(key)
+
+		attribute_col_index = value[0]
+		for row in data:
+			curr_nodeId = valueToNodeId[row[0]]
+			if attribute_type == 0:
+				G.AddIntAttrDatN(curr_nodeId, value[attribute_col_index], key)
+			elif attribute_type == 1:
+				G.AddFltAttrDatN(curr_nodeId, value[attribute_col_index], key)
+			elif attribute_type == 2:
+				G.AddStrAttrN(curr_nodeId, value[attribute_col_index], key)
+
+			
+
+def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
+	for key, value in attrs.iteritems():
+		attribute_type = value[1]
+		if attribute_type == 0:
+			G.AddIntAttrE(key)
+		elif attribute_type == 1:
+			G.AddIntAttrE(key)
+		elif attribute_type == 2:
+			G.AddIntAttrE(key)
+
+		attribute_col_index = value[0]
+		for EI in G.Edges():
+			curr_edgeId = EI.GetId()
+			curr_row = data[edgeIdToDataRow[curr_edgeId]]
+
+			if attribute_type == 0:
+				G.AddIntAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
+			elif attribute_type == 1:
+				G.AddFltAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
+			elif attribute_type == 2:
+				G.AddStrAttrE(curr_edgeId, curr_row[attribute_col_index], key)
+
+		
+
+
 def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
-	os.mkdir("../" + graph_name + '_' + "TNEANet")
+	graph_type = "TNEANet"
+	os.mkdir("../" + graph_name + '_' + graph_type)
 
+	cols = [source_col, dest_col]
+	for key in edgeAttrs.keys(): cols.append(edgeAttrs[key][0])
+	for key in sourceAttrs.keys(): cols.append(sourceAttrs[key][0])
+	for key in destAttrs.keys(): cols.append(destAttrs[key][0])
+	
+	df =  pd.read_csv(fname, usecols=cols, header=0)
+	df = df.dropna()
+
+	# Convert to numpy array
+	data = df.values
+
+	# Keep a mapping from node ID to original value
+	nodeIdToValue = createNodeIDs(data)
+	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
+
+	# Create the graph
 	G = snap.TNEANet.New()
-	G.AddNode(0)
-	G.AddNode(1)
-	G.AddEdge(0, 1)
-	G.AddEdge(0, 1)
-	G.AddIntAttrN("test")
-	G.AddIntAttrDatN(0, 10, "test")
-	print G.GetIntAttrDatN(0, "test")
-	return
 
+	# Add the nodes
+	for nodeId in nodeIdToValue.keys():
+		G.AddNode(nodeId)
 
-def main():
+	# Add the edges
+	# This data structure will be useful when adding edge attributes
+	# Because otherwise we would need to loop over all rows until we
+	# found the one corresponding to the current edge and we also
+	# need to allow for multiedges
+	edgeIdToDataRow = {}
+	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
+	for rowIndex in range(data.shape[0]):
+		currRow = data[rowIndex]
+		currEdgeId = G.AddEdge(valueToNodeId[currRow[0]], valueToNodeId[currRow[1]])
+		edgeIdToDataRow[currEdgeId] = rowIndex
+
+	# Add the edge attributes
+	addEdgeAttrs(G, sourceAttrs, data, edgeIdToDataRow)
+
+	# Add the source node attributes
+	addNodeAttrs(G, sourceAttrs, data)
+	
+	# Add the destination node attributes
+	addNodeAttrs(G, destAttrs, data)
+
+	# Save the graph
+	FOut = snap.TFOut("../" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
+	G.Save(FOut)
+	FOut.Flush()
+	
+
+def main():	
 	if len(sys.argv) == 1:
 		print "Must enter a CSV file name"
+	
 	else:
 		fname = sys.argv[1]
 
 		print "We will now use the data in " + fname + " to form a graph"
-		graph_name = raw_input("What do you want to name this graph? ")
+		graph_name = raw_input("What do you want to name this graph?: ")
 
 		print "Now you need to choose a graph type"
 		print "Enter 0 for TUNGraph"
 		print "Enter 1 for TNGraph"
 		print "Enter 2 for TNEANet"
-		graph_type = int(raw_input("What type of graph do you want? "))
+		graph_type = int(raw_input("What type of graph do you want?: "))
 
 		if graph_type == 2:
-			source_col = int(raw_input("Column index for the source nodes? (first column is index 0) "))
-			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0) "))
+			source_col = int(raw_input("Column index for the source nodes? (first column is index 0): "))
+			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0): "))
 
 			edgeAttrs = {}
 			sourceAttrs = {}
@@ -98,25 +186,28 @@ def main():
 			print "First enter the name of the attribute"
 			print "Then enter the column index of the attribute"
 			while True:
-				if raw_input("New edge attribute?(y/n) ") == 'n': break
-				key = raw_input("Edge attribute name ")
-				val = raw_input("Edge attribute column index (first column is index 0) ")
+				if raw_input("New edge attribute?(y/n): ") == 'n': break
+				key = raw_input("Edge attribute name: ")
+				val = [int(raw_input("Edge attribute column index (first column is index 0): "))]
+				val.append(int(raw_input("Attribute type (Enter 0 for int, 1 for float, 2 for string): ")))
 				edgeAttrs[key] = val
 
 
 			print "Now moving on to source node attributes"
 			while True:
-				if raw_input("New source node attribute?(y/n) ") == 'n': break
-				key = raw_input("Source node attribute name ")
-				val = raw_input("Source node attribute column index (first column is index 0) ")
+				if raw_input("New source node attribute?(y/n): ") == 'n': break
+				key = raw_input("Source node attribute name: ")
+				val = [int(raw_input("Source node attribute column index (first column is index 0): "))]
+				val.append(int(raw_input("Attribute type (Enter 0 for int, 1 for float, 2 for string): ")))
 				sourceAttrs[key] = val
 
 
 			print "Now moving on to destination node attributes"
 			while True:
-				if raw_input("New destination node attribute?(y/n) ") == 'n': break
-				key = raw_input("Destination node attribute name ")
-				val = raw_input("Destination node attribute column index (first column is index 0) ")
+				if raw_input("New destination node attribute?(y/n): ") == 'n': break
+				key = raw_input("Destination node attribute name: ")
+				val = [int(raw_input("Destination node attribute column index (first column is index 0): "))]
+				val.append(int(raw_input("Attribute type (Enter 0 for int, 1 for float, 2 for string): ")))
 				destAttrs[key] = val
 
 			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs)
@@ -124,8 +215,8 @@ def main():
 
 		else:
 			undirected = True if graph_type == 0 else False
-			source_col = int(raw_input("Column index for the source nodes? (first column is index 0) "))
-			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0) "))
+			source_col = int(raw_input("Column index for the source nodes? (first column is index 0): "))
+			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0): "))
 			createNormalGraph(fname, graph_name, undirected, source_col, dest_col)
 
 if __name__ == "__main__":
