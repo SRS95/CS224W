@@ -28,9 +28,10 @@ def createNodeIDs(data):
 	return result
 	
 
-def loadData(fname, graph_name, undirected, weighted, weight_col, source_col, dest_col):
+def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
+	graph_type = "undirected" if undirected else "directed"
 	# Make a folder to store all of the files for this graph
-	os.mkdir("../" + graph_name)
+	os.mkdir("../" + graph_name + '_' + graph_type)
 
 	cols = [source_col, dest_col]
 	if weighted: cols.append(weight_col)
@@ -54,23 +55,79 @@ def loadData(fname, graph_name, undirected, weighted, weight_col, source_col, de
 	np.savetxt(tabSeparatedGraphTitle, tabSeparatedGraph, fmt='%i', delimiter="\t")
 
 
+def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
+	os.mkdir("../" + graph_name + '_' + "TNEANet")
+
+	G = snap.TNEANet.New()
+	G.AddNode(0)
+	G.AddNode(1)
+	G.AddEdge(0, 1)
+	G.AddEdge(0, 1)
+	G.AddIntAttrN("test")
+	G.AddIntAttrDatN(0, 10, "test")
+	print G.GetIntAttrDatN(0, "test")
+	return
+
+
 def main():
 	if len(sys.argv) == 1:
 		print "Must enter a CSV file name"
 	else:
 		fname = sys.argv[1]
 
-		graph_name = raw_input("What do you want to name this graph?")
-		undirected = True if raw_input("Undirected? (y/n)") == 'y' else False
-		weighted = True if raw_input("Weighted? (y/n)") == 'y' else False
-		weight_col = None
-		if weighted:
-			weight_col = int(raw_input("Column index for the weights? (first column is index 0)"))
-		source_col = int(raw_input("Column index for the source nodes? (first column is index 0)"))
-		dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0)"))
+		print "We will now use the data in " + fname + " to form a graph"
+		graph_name = raw_input("What do you want to name this graph? ")
 
-		loadData(fname, graph_name, undirected, weighted, weight_col, source_col, dest_col)
+		print "Now you need to choose a graph type"
+		print "Enter 0 for TUNGraph"
+		print "Enter 1 for TNGraph"
+		print "Enter 2 for TNEANet"
+		graph_type = int(raw_input("What type of graph do you want? "))
 
+		if graph_type == 2:
+			source_col = int(raw_input("Column index for the source nodes? (first column is index 0) "))
+			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0) "))
+
+			edgeAttrs = {}
+			sourceAttrs = {}
+			destAttrs = {}
+
+			print "Since you have chosen TNEANet, you now need to declare any node and edge attributes"
+			print "Note that if this is a weighted graph you should declare an edge attribute named weight with the column index of the edge weights"
+			print ""
+			print "We will begin with edge attributes"
+			print "First enter the name of the attribute"
+			print "Then enter the column index of the attribute"
+			while True:
+				if raw_input("New edge attribute?(y/n) ") == 'n': break
+				key = raw_input("Edge attribute name ")
+				val = raw_input("Edge attribute column index (first column is index 0) ")
+				edgeAttrs[key] = val
+
+
+			print "Now moving on to source node attributes"
+			while True:
+				if raw_input("New source node attribute?(y/n) ") == 'n': break
+				key = raw_input("Source node attribute name ")
+				val = raw_input("Source node attribute column index (first column is index 0) ")
+				sourceAttrs[key] = val
+
+
+			print "Now moving on to destination node attributes"
+			while True:
+				if raw_input("New destination node attribute?(y/n) ") == 'n': break
+				key = raw_input("Destination node attribute name ")
+				val = raw_input("Destination node attribute column index (first column is index 0) ")
+				destAttrs[key] = val
+
+			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs)
+
+
+		else:
+			undirected = True if graph_type == 0 else False
+			source_col = int(raw_input("Column index for the source nodes? (first column is index 0) "))
+			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0) "))
+			createNormalGraph(fname, graph_name, undirected, source_col, dest_col)
 
 if __name__ == "__main__":
 	main()
