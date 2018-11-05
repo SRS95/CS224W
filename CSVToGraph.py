@@ -43,7 +43,7 @@ def createNodeIDs(data):
 def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 	graph_type = "undirected" if undirected else "directed"
 	# Make a folder to store all of the files for this graph
-	os.mkdir("../" + graph_name + '_' + graph_type)
+	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 
 	cols = [source_col, dest_col]
 
@@ -55,14 +55,14 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
-	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
+	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create a tab separated representation of the graph
 	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
 	tabSeparatedGraph = createTabSeparatedGraph(data, valueToNodeId)
 
 	# Save the graph to the folder so that it can be loaded in the future
-	tabSeparatedGraphTitle = "../" + graph_name + '_' + graph_type + '/' + graph_name + ".txt"
+	tabSeparatedGraphTitle = "../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".txt"
 	np.savetxt(tabSeparatedGraphTitle, tabSeparatedGraph, fmt='%i', delimiter="\t")
 
 
@@ -116,7 +116,7 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 
 def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
 	graph_type = "TNEANet"
-	os.mkdir("../" + graph_name + '_' + graph_type)
+	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 
 	cols = [source_col, dest_col]
 	for key in edgeAttrs.keys(): cols.append(edgeAttrs[key][0])
@@ -131,7 +131,7 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
-	np.save("../" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
+	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create the graph
 	G = snap.TNEANet.New()
@@ -162,7 +162,7 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 	addNodeAttrs(G, destAttrs, data)
 
 	# Save the graph
-	FOut = snap.TFOut("../" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
+	FOut = snap.TFOut("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
 	G.Save(FOut)
 	FOut.Flush()
 	
