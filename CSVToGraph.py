@@ -44,18 +44,37 @@ def createNodeIDs(data):
 	return result
 	
 
-def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
+def getBipartiteClasses(data, valueToNodeId):
+	source_class = set()
+	dest_class = set()
+
+	for row in data:
+		source_class.add(valueToNodeId[row[0]])
+		dest_class.add(valueToNodeId[row[1]])
+
+	broken_indices = source_class.intersection(dest_class)
+	if len(broken_indices) > 0:
+		print "Bipartite violations found at the following indices:"
+		print broken_indices
+
+	return list(source_class), list(dest_class), list(broken_indices)
+
+
+
+def createNormalGraph(fname, graph_name, undirected, source_col, dest_col, bipartite):
 	graph_type = "undirected" if undirected else "directed"
 	# Make a folder to store all of the files for this graph
 	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 
 	cols = [source_col, dest_col]
 
-	df =  pd.read_csv(fname, usecols=cols, header=0)
+	df = pd.read_csv(fname, usecols=cols, header=0)
 	df = df.dropna()
 
 	# Convert to numpy array
 	data = df.values
+	print data
+	print data.shape
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
@@ -63,6 +82,16 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 	# Create a tab separated representation of the graph
 	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
+
+	# If the graph is bipartite, then we want to save the two bipartite classes
+	# We also want to be aware of any edges that violate the bipartite structure
+	if bipartite:
+		source_class, dest_class, broken_indices = getBipartiteClasses(data, valueToNodeId)
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/bipartite_source_class", np.array(source_class))
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/bipartite_dest_class", np.array(dest_class))
+		if len(broken_indices) > 0:
+			np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/data_indices_violating_bipartite_structure", np.array(broken_indices))
+
 	tabSeparatedGraph = createTabSeparatedGraph(data, valueToNodeId)
 
 	# Save the graph to the folder so that it can be loaded in the future
@@ -148,21 +177,41 @@ for key, val in source_node_dict:
 	print key, val
 '''
 
-def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
+def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite):
 	graph_type = "TNEANet"
 	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 	
 	# Don't choose specific columns here because we may have node/edge attributes
 	df =  pd.read_csv(fname, header=0)
-	df = df.dropna()
+	df = df.fillna(-1)
 
 	# Convert to numpy array
+	# Delete invalid rows (i.e. rows missing a source or dest node)
 	data = df.values
+	row_index = 0
+	while True:
+		if row_index >= data.shape[0]: break
+		curr_row = data[row_index]
+		if curr_row[source_col] == -1 or curr_row[dest_col] == -1: 
+			data = np.delete(data, row_index, axis=0)
+		row_index += 1
+
 	nodeData = np.concatenate((data[:, [source_col]], data[:, [dest_col]]), axis=1)
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(nodeData)
 	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
+
+	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
+
+	# If the graph is bipartite, then we want to save the two bipartite classes
+	# We also want to be aware of any edges that violate the bipartite structure
+	if bipartite:
+		source_class, dest_class, broken_indices = getBipartiteClasses(nodeData, valueToNodeId)
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/bipartite_source_class", np.array(source_class))
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/bipartite_dest_class", np.array(dest_class))
+		if len(broken_indices) > 0:
+			np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/data_indices_violating_bipartite_structure", np.array(broken_indices))
 
 	# Create the graph
 	G = snap.TNEANet.New()
@@ -177,7 +226,6 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 	# found the one corresponding to the current edge and we also
 	# need to allow for multiedges
 	edgeIdToDataRow = {}
-	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
 	for rowIndex in range(data.shape[0]):
 		currRow = data[rowIndex]
 		currEdgeId = G.AddEdge(valueToNodeId[currRow[source_col]], valueToNodeId[currRow[dest_col]])
@@ -225,6 +273,7 @@ def main():
 		print "Enter 1 for TNGraph"
 		print "Enter 2 for TNEANet"
 		graph_type = int(raw_input("What type of graph do you want?: "))
+		bipartite = raw_input("Is this graph bipartite?(y/n): ") == 'y'
 
 		if graph_type == 2:
 			source_col = int(raw_input("Column index for the source nodes? (first column is index 0): "))
@@ -265,14 +314,14 @@ def main():
 				val.append(int(raw_input("Attribute type (Enter 0 for int, 1 for float, 2 for string): ")))
 				destAttrs[key] = val
 
-			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs)
+			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite)
 
 
 		else:
 			undirected = True if graph_type == 0 else False
 			source_col = int(raw_input("Column index for the source nodes? (first column is index 0): "))
 			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0): "))
-			createNormalGraph(fname, graph_name, undirected, source_col, dest_col)
+			createNormalGraph(fname, graph_name, undirected, source_col, dest_col, bipartite)
 
 if __name__ == "__main__":
 	main()
