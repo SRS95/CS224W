@@ -26,17 +26,21 @@ def createTabSeparatedGraph(data, valueToNodeId):
 
 	return result
 
-
+# Takes in a 2-column matrix of the objects
+# we are treating as nodes in our graph.
+# Generates IDs for all of them.
 def createNodeIDs(data):
 	result = {}
+	visited = set()
 	currNodeId = 0
 
 	for row in data:
 		for value in row:
-			if value not in result:
+			if value not in visited:
 				result[currNodeId] = value
 				currNodeId += 1
-
+				visited.add(value)
+				
 	return result
 	
 
@@ -67,7 +71,7 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 
 
-def addNodeAttrs(G, attrs, data):
+def addNodeAttrs(G, attrs, data, col):
 	for key, value in attrs.iteritems():
 		attribute_type = value[1]
 		if attribute_type == 0:
@@ -79,13 +83,13 @@ def addNodeAttrs(G, attrs, data):
 
 		attribute_col_index = value[0]
 		for row in data:
-			curr_nodeId = valueToNodeId[row[0]]
+			curr_nodeId = valueToNodeId[row[col]]
 			if attribute_type == 0:
-				G.AddIntAttrDatN(curr_nodeId, value[attribute_col_index], key)
+				G.AddIntAttrDatN(curr_nodeId, row[attribute_col_index], key)
 			elif attribute_type == 1:
-				G.AddFltAttrDatN(curr_nodeId, value[attribute_col_index], key)
+				G.AddFltAttrDatN(curr_nodeId, row[attribute_col_index], key)
 			elif attribute_type == 2:
-				G.AddStrAttrN(curr_nodeId, value[attribute_col_index], key)
+				G.AddStrAttrDatN(curr_nodeId, row[attribute_col_index], key)
 
 			
 
@@ -109,7 +113,7 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 			elif attribute_type == 1:
 				G.AddFltAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
 			elif attribute_type == 2:
-				G.AddStrAttrE(curr_edgeId, curr_row[attribute_col_index], key)
+				G.AddStrAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
 
 		
 
@@ -117,20 +121,17 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
 	graph_type = "TNEANet"
 	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
-
-	cols = [source_col, dest_col]
-	for key in edgeAttrs.keys(): cols.append(edgeAttrs[key][0])
-	for key in sourceAttrs.keys(): cols.append(sourceAttrs[key][0])
-	for key in destAttrs.keys(): cols.append(destAttrs[key][0])
 	
-	df =  pd.read_csv(fname, usecols=cols, header=0)
+	# Don't choose specific columns here because we may have node/edge attributes
+	df =  pd.read_csv(fname, header=0)
 	df = df.dropna()
 
 	# Convert to numpy array
 	data = df.values
+	nodeData = np.concatenate((data[:, [source_col]], data[:, [dest_col]]), axis=1)
 
 	# Keep a mapping from node ID to original value
-	nodeIdToValue = createNodeIDs(data)
+	nodeIdToValue = createNodeIDs(nodeData)
 	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create the graph
@@ -149,22 +150,26 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
 	for rowIndex in range(data.shape[0]):
 		currRow = data[rowIndex]
-		currEdgeId = G.AddEdge(valueToNodeId[currRow[0]], valueToNodeId[currRow[1]])
+		currEdgeId = G.AddEdge(valueToNodeId[currRow[source_col]], valueToNodeId[currRow[dest_col]])
 		edgeIdToDataRow[currEdgeId] = rowIndex
 
 	# Add the edge attributes
 	addEdgeAttrs(G, sourceAttrs, data, edgeIdToDataRow)
 
 	# Add the source node attributes
-	addNodeAttrs(G, sourceAttrs, data)
+	addNodeAttrs(G, sourceAttrs, data, source_col)
 	
 	# Add the destination node attributes
-	addNodeAttrs(G, destAttrs, data)
+	addNodeAttrs(G, destAttrs, data, dest_col)
 
 	# Save the graph
 	FOut = snap.TFOut("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
 	G.Save(FOut)
 	FOut.Flush()
+
+	FIn = snap.TFIn("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
+	G = snap.TNEANet.Load(FIn)
+	G.Dump()
 	
 
 def main():	
