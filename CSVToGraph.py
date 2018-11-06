@@ -71,7 +71,7 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 
 
-def addNodeAttrs(G, attrs, data, col):
+def addNodeAttrs(G, attrs, data, col, valueToNodeId):
 	for key, value in attrs.iteritems():
 		attribute_type = value[1]
 		if attribute_type == 0:
@@ -85,11 +85,11 @@ def addNodeAttrs(G, attrs, data, col):
 		for row in data:
 			curr_nodeId = valueToNodeId[row[col]]
 			if attribute_type == 0:
-				G.AddIntAttrDatN(curr_nodeId, row[attribute_col_index], key)
+				G.AddIntAttrDatN(curr_nodeId, int(row[attribute_col_index]), key)
 			elif attribute_type == 1:
-				G.AddFltAttrDatN(curr_nodeId, row[attribute_col_index], key)
+				G.AddFltAttrDatN(curr_nodeId, float(row[attribute_col_index]), key)
 			elif attribute_type == 2:
-				G.AddStrAttrDatN(curr_nodeId, row[attribute_col_index], key)
+				G.AddStrAttrDatN(curr_nodeId, str(row[attribute_col_index]), key)
 
 			
 
@@ -109,11 +109,11 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 			curr_row = data[edgeIdToDataRow[curr_edgeId]]
 
 			if attribute_type == 0:
-				G.AddIntAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
+				G.AddIntAttrDatE(curr_edgeId, int(curr_row[attribute_col_index]), key)
 			elif attribute_type == 1:
-				G.AddFltAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
+				G.AddFltAttrDatE(curr_edgeId, float(curr_row[attribute_col_index]), key)
 			elif attribute_type == 2:
-				G.AddStrAttrDatE(curr_edgeId, curr_row[attribute_col_index], key)
+				G.AddStrAttrDatE(curr_edgeId, str(curr_row[attribute_col_index]), key)
 
 		
 
@@ -154,22 +154,18 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 		edgeIdToDataRow[currEdgeId] = rowIndex
 
 	# Add the edge attributes
-	addEdgeAttrs(G, sourceAttrs, data, edgeIdToDataRow)
+	addEdgeAttrs(G, edgeAttrs, data, edgeIdToDataRow)
 
 	# Add the source node attributes
-	addNodeAttrs(G, sourceAttrs, data, source_col)
+	addNodeAttrs(G, sourceAttrs, data, source_col, valueToNodeId)
 	
 	# Add the destination node attributes
-	addNodeAttrs(G, destAttrs, data, dest_col)
+	addNodeAttrs(G, destAttrs, data, dest_col, valueToNodeId)
 
 	# Save the graph
 	FOut = snap.TFOut("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
 	G.Save(FOut)
 	FOut.Flush()
-
-	FIn = snap.TFIn("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
-	G = snap.TNEANet.Load(FIn)
-	G.Dump()
 	
 
 def main():	
