@@ -72,7 +72,11 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col):
 
 
 def addNodeAttrs(G, attrs, data, col, valueToNodeId):
+	auxiliary_node_data = {}
+
 	for key, value in attrs.iteritems():
+		curr_auxiliary_node_data = {}
+
 		attribute_type = value[1]
 		if attribute_type == 0:
 			G.AddIntAttrN(key)
@@ -87,14 +91,22 @@ def addNodeAttrs(G, attrs, data, col, valueToNodeId):
 			if attribute_type == 0:
 				G.AddIntAttrDatN(curr_nodeId, int(row[attribute_col_index]), key)
 			elif attribute_type == 1:
-				G.AddFltAttrDatN(curr_nodeId, float(row[attribute_col_index]), key)
+				curr_auxiliary_node_data[curr_nodeId] = float(row[attribute_col_index])
 			elif attribute_type == 2:
-				G.AddStrAttrDatN(curr_nodeId, str(row[attribute_col_index]), key)
+				curr_auxiliary_node_data[curr_nodeId] = str(row[attribute_col_index])
+
+		if len(curr_auxiliary_node_data) > 0: auxiliary_node_data[key] = curr_auxiliary_node_data
+
+	return auxiliary_node_data
 
 			
 
 def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
+	auxiliary_edge_data = {}
+
 	for key, value in attrs.iteritems():
+		curr_auxiliary_edge_data = {}
+
 		attribute_type = value[1]
 		if attribute_type == 0:
 			G.AddIntAttrE(key)
@@ -111,12 +123,30 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 			if attribute_type == 0:
 				G.AddIntAttrDatE(curr_edgeId, int(curr_row[attribute_col_index]), key)
 			elif attribute_type == 1:
-				G.AddFltAttrDatE(curr_edgeId, float(curr_row[attribute_col_index]), key)
+				curr_auxiliary_edge_data[curr_edgeId] = float(curr_row[attribute_col_index])
 			elif attribute_type == 2:
-				G.AddStrAttrDatE(curr_edgeId, str(curr_row[attribute_col_index]), key)
+				curr_auxiliary_edge_data[curr_edgeId] = str(curr_row[attribute_col_index])
+
+		if len(curr_auxiliary_edge_data) > 0: auxiliary_edge_data[key] = curr_auxiliary_edge_data
+
+	return auxiliary_edge_data
 
 		
+'''
+Load and view graphs as follows:
 
+FIn = snap.TFIn("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
+G = snap.TNEANet.Load(FIn)
+G.Dump()
+
+
+Load and view dicts as follows:
+
+source_node_data = np.load("../" + "graphs/" + graph_name + '_' + graph_type + '/' + "auxiliary_source_node_data.npy")
+source_node_dict = source_data.item()
+for key, val in source_node_dict:
+	print key, val
+'''
 
 def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs):
 	graph_type = "TNEANet"
@@ -154,18 +184,30 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 		edgeIdToDataRow[currEdgeId] = rowIndex
 
 	# Add the edge attributes
-	addEdgeAttrs(G, edgeAttrs, data, edgeIdToDataRow)
+	auxiliary_edge_data = addEdgeAttrs(G, edgeAttrs, data, edgeIdToDataRow)
 
 	# Add the source node attributes
-	addNodeAttrs(G, sourceAttrs, data, source_col, valueToNodeId)
+	auxiliary_source_node_data = addNodeAttrs(G, sourceAttrs, data, source_col, valueToNodeId)
 	
 	# Add the destination node attributes
-	addNodeAttrs(G, destAttrs, data, dest_col, valueToNodeId)
+	auxiliary_dest_node_data = addNodeAttrs(G, destAttrs, data, dest_col, valueToNodeId)
 
 	# Save the graph
 	FOut = snap.TFOut("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
 	G.Save(FOut)
 	FOut.Flush()
+
+	# Save the auxiliary data that we have stored in dicts of dicts
+	# We did this because there are issues with the snap implementation
+	# regarding float and string edge/node attributes
+	if len(auxiliary_edge_data) > 0:
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_edge_data", auxiliary_edge_data)
+
+	if len(auxiliary_source_node_data) > 0:
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_source_node_data", auxiliary_source_node_data)
+
+	if len(auxiliary_dest_node_data) > 0:
+		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_dest_node_data", auxiliary_dest_node_data)
 	
 
 def main():	
