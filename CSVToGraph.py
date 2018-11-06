@@ -1,6 +1,6 @@
 '''
 Author: Sam Schwager
-Last Modified: 11/5/2018
+Last Modified: 11/6/2018
 
 This scipt generates arbitrarily complex graphs from CSV files,
 giving users the flexibility to choose which columns from the
@@ -100,7 +100,7 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col, bipar
 
 
 
-def addNodeAttrs(G, attrs, data, col, valueToNodeId):
+def addNodeAttrs(G, attrs, data, col, valueToNodeId, store_auxiliary_data):
 	auxiliary_node_data = {}
 
 	for key, value in attrs.iteritems():
@@ -110,19 +110,22 @@ def addNodeAttrs(G, attrs, data, col, valueToNodeId):
 		if attribute_type == 0:
 			G.AddIntAttrN(key)
 		elif attribute_type == 1:
-			G.AddIntAttrN(key)
+			G.AddFltAttrN(key)
 		elif attribute_type == 2:
-			G.AddIntAttrN(key)
+			G.AddStrAttrN(key)
 
 		attribute_col_index = value[0]
 		for row in data:
 			curr_nodeId = valueToNodeId[row[col]]
 			if attribute_type == 0:
 				G.AddIntAttrDatN(curr_nodeId, int(row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_node_data[curr_nodeId] = int(curr_row[attribute_col_index])
 			elif attribute_type == 1:
-				curr_auxiliary_node_data[curr_nodeId] = float(row[attribute_col_index])
+				G.AddFltAttrDatN(curr_nodeId, float(row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_node_data[curr_nodeId] = float(curr_row[attribute_col_index])
 			elif attribute_type == 2:
-				curr_auxiliary_node_data[curr_nodeId] = str(row[attribute_col_index])
+				G.AddStrAttrDatN(curr_nodeId, str(row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_node_data[curr_nodeId] = str(row[attribute_col_index])
 
 		if len(curr_auxiliary_node_data) > 0: auxiliary_node_data[key] = curr_auxiliary_node_data
 
@@ -130,7 +133,7 @@ def addNodeAttrs(G, attrs, data, col, valueToNodeId):
 
 			
 
-def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
+def addEdgeAttrs(G, attrs, data, edgeIdToDataRow, store_auxiliary_data):
 	auxiliary_edge_data = {}
 
 	for key, value in attrs.iteritems():
@@ -140,9 +143,9 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 		if attribute_type == 0:
 			G.AddIntAttrE(key)
 		elif attribute_type == 1:
-			G.AddIntAttrE(key)
+			G.AddFltAttrE(key)
 		elif attribute_type == 2:
-			G.AddIntAttrE(key)
+			G.AddStrAttrE(key)
 
 		attribute_col_index = value[0]
 		for EI in G.Edges():
@@ -151,10 +154,13 @@ def addEdgeAttrs(G, attrs, data, edgeIdToDataRow):
 
 			if attribute_type == 0:
 				G.AddIntAttrDatE(curr_edgeId, int(curr_row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_edge_data[curr_edgeId] = int(curr_row[attribute_col_index])
 			elif attribute_type == 1:
-				curr_auxiliary_edge_data[curr_edgeId] = float(curr_row[attribute_col_index])
+				G.AddFltAttrDatE(curr_edgeId, float(curr_row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_edge_data[curr_edgeId] = float(curr_row[attribute_col_index])
 			elif attribute_type == 2:
-				curr_auxiliary_edge_data[curr_edgeId] = str(curr_row[attribute_col_index])
+				G.AddStrAttrDatE(curr_edgeId, str(curr_row[attribute_col_index]), key)
+				if store_auxiliary_data: curr_auxiliary_edge_data[curr_edgeId] = str(curr_row[attribute_col_index])
 
 		if len(curr_auxiliary_edge_data) > 0: auxiliary_edge_data[key] = curr_auxiliary_edge_data
 
@@ -177,7 +183,7 @@ for key, val in source_node_dict:
 	print key, val
 '''
 
-def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite):
+def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite, store_auxiliary_data):
 	graph_type = "TNEANet"
 	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 	
@@ -232,29 +238,30 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 		edgeIdToDataRow[currEdgeId] = rowIndex
 
 	# Add the edge attributes
-	auxiliary_edge_data = addEdgeAttrs(G, edgeAttrs, data, edgeIdToDataRow)
+	auxiliary_edge_data = addEdgeAttrs(G, edgeAttrs, data, edgeIdToDataRow, store_auxiliary_data)
 
 	# Add the source node attributes
-	auxiliary_source_node_data = addNodeAttrs(G, sourceAttrs, data, source_col, valueToNodeId)
+	auxiliary_source_node_data = addNodeAttrs(G, sourceAttrs, data, source_col, valueToNodeId, store_auxiliary_data)
 	
 	# Add the destination node attributes
-	auxiliary_dest_node_data = addNodeAttrs(G, destAttrs, data, dest_col, valueToNodeId)
+	auxiliary_dest_node_data = addNodeAttrs(G, destAttrs, data, dest_col, valueToNodeId, store_auxiliary_data)
 
 	# Save the graph
 	FOut = snap.TFOut("../" + "graphs/" + graph_name + '_' + graph_type + '/' + graph_name + ".graph")
 	G.Save(FOut)
 	FOut.Flush()
 
-	# Save the auxiliary data that we have stored in dicts of dicts
+	# If stipulated by the user, then we want to
+	# save the auxiliary data that we have stored in dicts of dicts
 	# We did this because there are issues with the snap implementation
 	# regarding float and string edge/node attributes
-	if len(auxiliary_edge_data) > 0:
+	if store_auxiliary_data and len(auxiliary_edge_data) > 0:
 		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_edge_data", auxiliary_edge_data)
 
-	if len(auxiliary_source_node_data) > 0:
+	if store_auxiliary_data and len(auxiliary_source_node_data) > 0:
 		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_source_node_data", auxiliary_source_node_data)
 
-	if len(auxiliary_dest_node_data) > 0:
+	if store_auxiliary_data and len(auxiliary_dest_node_data) > 0:
 		np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/auxiliary_dest_node_data", auxiliary_dest_node_data)
 	
 
@@ -276,6 +283,10 @@ def main():
 		bipartite = raw_input("Is this graph bipartite?(y/n): ") == 'y'
 
 		if graph_type == 2:
+			print "We can store all of the information we need in the graph"
+			print "But if you want to store auxiliary data for nodes and edges in numpy arrays we can do that too"
+			store_auxiliary_data = raw_input("Store auxiliary data outside of graph?(y/n): ") == 'y'
+
 			source_col = int(raw_input("Column index for the source nodes? (first column is index 0): "))
 			dest_col = int(raw_input("Column index for the destination nodes? (first column is index 0): "))
 
@@ -314,7 +325,7 @@ def main():
 				val.append(int(raw_input("Attribute type (Enter 0 for int, 1 for float, 2 for string): ")))
 				destAttrs[key] = val
 
-			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite)
+			createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourceAttrs, destAttrs, bipartite, store_auxiliary_data)
 
 
 		else:
