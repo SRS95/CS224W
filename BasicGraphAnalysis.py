@@ -20,37 +20,42 @@ def analyzeGraph(G):
 	return
 
 
+def loadGraph(fname):
+	file_check = fname.split('.')
+
+	is_txt_file = file_check[len(file_check) - 1] == "txt"
+	is_graph_file = file_check[len(file_check) - 1] == "graph"
+
+	G = None
+
+	if not is_txt_file and not is_graph_file:
+		print "File must be a .txt or .graph file"
+		return G
+
+	if not os.path.isfile(fname):
+		print "File does not exist"
+		return G
+
+	if is_txt_file:
+		G = snap.LoadEdgeList(fname)
+
+	else:
+		FIn = snap.TFIn(fname)
+		G = snap.TNEANet.Load(FIn)
+
+	return G
+
+
 def main():
 	if len(sys.argv) != 2:
-		print "Must enter a valid CSV file name after the name of the Python script and nothing else"
+		print "Must enter a valid .graph or .txt file name after the name of the Python script and nothing else"
 	
 	else:
 		fname = sys.argv[1]
 
-		file_check = fname.split('.')
-
-		is_txt_file = file_check[len(file_check) - 1] == "txt"
-		is_graph_file = file_check[len(file_check) - 1] == "graph"
-
-		if not is_txt_file and not is_graph_file:
-			print "File must be a .txt or .graph file"
-			return
-
-		if not os.path.isfile(fname):
-			print "File does not exist"
-			return 
-
-		G = None
-
-		if is_txt_file:
-			G = snap.LoadEdgeList(fname)
-
-		else:
-			FIn = snap.TFIn(fname)
-			G = snap.TNEANet.Load(FIn)
-
-		G.Dump()
-		analyzeGraph(G)
+		G = loadGraph(fname)
+		if G == None: return
+		else: analyzeGraph(G)
 
 
 if __name__ == "__main__":
