@@ -268,7 +268,7 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 
 def main():	
 	if len(sys.argv) != 2:
-		print "Must enter a CSV file name and nothing else"
+		print "Must enter a valid CSV file name after the name of the Python script and nothing else"
 	
 	else:
 		fname = sys.argv[1]
@@ -276,7 +276,7 @@ def main():
 		file_check = fname.split('.')
 
 		if file_check[len(file_check) - 1] != "csv":
-			print "File must be a csv"
+			print "File must be a .csv file"
 			return
 
 		if not os.path.isfile(fname):
