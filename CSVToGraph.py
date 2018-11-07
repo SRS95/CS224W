@@ -266,11 +266,21 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 	
 
 def main():	
-	if len(sys.argv) == 1:
-		print "Must enter a CSV file name"
+	if len(sys.argv) != 2:
+		print "Must enter a CSV file name and nothing else"
 	
 	else:
 		fname = sys.argv[1]
+
+		file_check = fname.split('.')
+
+		if file_check[len(file_check) - 1] != "csv":
+			print "File must be a csv"
+			return
+
+		if not os.path.isfile(fname):
+			print "File does not exist"
+			return 
 
 		print "We will now use the data in " + fname + " to form a graph"
 		graph_name = raw_input("What do you want to name this graph?: ")
