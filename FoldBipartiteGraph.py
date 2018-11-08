@@ -14,11 +14,25 @@ def foldGraph(G, source_class, dest_class, reverse):
 		source_class = dest_class.copy()
 		dest_class = source_class.copy()
 
+		for EI in G.Edges():
+			curr_source = EI.GetSrcNId()
+			curr_dest = EI.GetDstNId()
+
+			G.DelEdge(curr_source, curr_dest)
+			G.AddEdge(curr_dest, curr_source)
+
 	G_folded = snap.TUNGraph.New()
-	for nodeId in source_class: G_folded.AddNode(nodeId)
+	for nodeId in source_class: 
+		G_folded.AddNode(nodeId)
+
+	progress_counter = 1
 
 	for dest_node in dest_class:
-		curr_NI = G.GetNI(nodeId)
+		
+		print "On node " + str(progress_counter) + " of " + str(dest_class.shape[0])
+		progress_counter += 1
+
+		curr_NI = G.GetNI(dest_node)
 		curr_deg = curr_NI.GetDeg()
 		for neighborIndex1 in range(curr_deg):
 			nbr1 = curr_NI.GetNbrNId(neighborIndex1)
@@ -72,16 +86,41 @@ def loadGraph(fname):
 	return G, source_class, dest_class
 
 
+def saveGraph(G, fname, reverse):
+	fname_split = fname.split('/')
+	path = ""
+	
+	for path_elem in range(len(fname_split) - 1):
+		path = path + fname_split[path_elem] + '/'
+
+	print path
+
+	if reverse: 
+		path = path + fname_split[len(fname_split) - 2] + "_folded_reverse_order.graph"
+	else: 
+		path = path + fname_split[len(fname_split) - 2] + "_folded.graph"
+
+	FOut = snap.TFOut(path)
+	G.Save(FOut)
+	FOut.Flush()
+
+
 def main():
 	parser = argparse.ArgumentParser(description='Fold a bipartite graph.')
 	parser.add_argument('filename', type=str, help='Path to the .txt or .graph file containing the bipartite graph of the form ../graphs/graphname_graphtype/graphname')
 	parser.add_argument('--reverse', type=bool, dest='reverse', default=False, help='Set to True if you want to fold in the reverse direction')
 	args = parser.parse_args()
 
-	G, source_class, dest_class = loadGraph(args.filename)
+	fname = args.filename
+	reverse = args.reverse
+	G, source_class, dest_class = loadGraph(fname)
 	
-	if G == None: return
-	else: foldGraph(G, source_class, dest_class, args.reverse)
+	if G == None: 
+		return
+	
+	else: 
+		G_folded = foldGraph(G, source_class, dest_class, reverse)
+		saveGraph(G_folded, fname, reverse)
 
 
 if __name__ == "__main__":
