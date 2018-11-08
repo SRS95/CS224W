@@ -15,7 +15,23 @@ import argparse
 
 
 def analyzeGraph(G):
-    retrun
+    nodeCount = G.GetNodes()
+    edgeCount = G.GetEdges()
+    print "Number of nodes in the network: ", nodeCount
+    print "Number of Edges in the network: ", edgeCount
+    print "Graph Density: ", (2.0*edgeCount)/(nodeCount*(nodeCount-1))
+    print "Cluster Coefficient: ", snap.GetClustCf(G)
+        
+#            Components = snap.TCnComV()
+#            snap.GetWccs(G, Components)
+#            number_of_wccs = 0
+#            for comp in Components: number_of_wccs+= 1
+#            print "Number of weakly connected components: ", number_of_wccs
+#            MaxWcc = snap.GetMxWcc(G)
+#            print "Number of Nodes in the largest weakly connected component:", MaxWcc.GetNodes()
+#            print "Number of Edges in the largest weakly connected component: ", MaxWcc.GetEdges()
+#            print "Cluster Coefficient: ", snap.GetClustCf(G)
+    return
 
 
 
@@ -35,8 +51,15 @@ def loadGraph(fname):
 		print "File does not exist"
 		return G
 
-	if is_txt_file:
-		G = snap.LoadEdgeList(fname)
+	graph_check = fname.split('/')
+	graph_check = graph_check[len(graph_check) - 2].split('_')
+	is_directed = graph_check[len(graph_check) - 1] == "directed"
+
+	if is_txt_file and is_directed:
+		G = snap.LoadEdgeList(snap.PNGraph, fname)
+
+	elif is_txt_file and not is_directed:
+		G = snap.LoadEdgeList(snap.PUNGraph, fname)
 
 	else:
 		FIn = snap.TFIn(fname)
