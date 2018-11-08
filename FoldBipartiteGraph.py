@@ -11,8 +11,9 @@ import argparse
 
 def foldGraph(G, source_class, dest_class, reverse):
 	if reverse:
+		temp = source_class.copy()
 		source_class = dest_class.copy()
-		dest_class = source_class.copy()
+		dest_class = temp.copy()
 
 		for EI in G.Edges():
 			curr_source = EI.GetSrcNId()
@@ -114,10 +115,10 @@ def main():
 	fname = args.filename
 	reverse = args.reverse
 	G, source_class, dest_class = loadGraph(fname)
-	
+
 	if G == None: 
 		return
-	
+
 	else: 
 		G_folded = foldGraph(G, source_class, dest_class, reverse)
 		saveGraph(G_folded, fname, reverse)
