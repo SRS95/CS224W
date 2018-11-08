@@ -34,11 +34,14 @@ def foldGraph(G, source_class, dest_class, reverse):
 		progress_counter += 1
 
 		curr_NI = G.GetNI(dest_node)
-		curr_deg = curr_NI.GetDeg()
+		curr_deg = curr_NI.GetInDeg()
+		print "The degree of the current node is " + str(curr_deg)
 		for neighborIndex1 in range(curr_deg):
-			nbr1 = curr_NI.GetNbrNId(neighborIndex1)
+			nbr1 = curr_NI.GetInNId(neighborIndex1)
+			if nbr1 in dest_class: continue
 			for neighborIndex2 in range(neighborIndex1 + 1, curr_deg):
-				nbr2 = curr_NI.GetNbrNId(neighborIndex2)
+				nbr2 = curr_NI.GetInNId(neighborIndex2)
+				if nbr2 in dest_class: continue
 				if not G.IsEdge(nbr1, nbr2): G.AddEdge(nbr1, nbr2)
 
 	print "There are " + str(G_folded.GetNodes()) + " nodes in the folded graph."
