@@ -199,7 +199,8 @@ def createComplexGraph(fname, graph_name, source_col, dest_col, edgeAttrs, sourc
 		curr_row = data[row_index]
 		if curr_row[source_col] == -1 or curr_row[dest_col] == -1: 
 			data = np.delete(data, row_index, axis=0)
-		row_index += 1
+		else:
+			row_index += 1
 
 	nodeData = np.concatenate((data[:, [source_col]], data[:, [dest_col]]), axis=1)
 
