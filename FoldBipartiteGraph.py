@@ -1,8 +1,6 @@
 '''
 Fold a bipartite graph.
 '''
-
-
 import snap
 import numpy as np
 import pandas as pd
@@ -10,45 +8,40 @@ import sys
 import os
 import argparse
 
-def foldGraph(G):
-	G_folded = snap.PUNGraph.New()
 
-	progressCounter = 0
+def foldGraph(G, source_class, dest_class, reverse):
+	if reverse:
+		source_class = dest_class.copy()
+		dest_class = source_class.copy()
 
-	for key, value in genesToDiseases.iteritems():
-		# Report progress
-		progressCounter += 1
-		print "On gene " + str(progressCounter) + " of 17,074"
+	G_folded = snap.TUNGraph.New()
+	for nodeId in source_class: G_folded.AddNode(nodeId)
 
-		#Update most common gene if necessary
-		currGeneNumDiseases = len(value)
-		if currGeneNumDiseases > mostCommonGene:
-			mostCommonGene = currGeneNumDiseases
+	for dest_node in dest_class:
+		curr_NI = G.GetNI(nodeId)
+		curr_deg = curr_NI.GetDeg()
+		for neighborIndex1 in range(curr_deg):
+			nbr1 = curr_NI.GetNbrNId(neighborIndex1)
+			for neighborIndex2 in range(neighborIndex1 + 1, curr_deg):
+				nbr2 = curr_NI.GetNbrNId(neighborIndex2)
+				if not G.IsEdge(nbr1, nbr2): G.AddEdge(nbr1, nbr2)
 
-		# Add nodes and edges to HDN
-		for diseaseId1 in value:
-			diseaseId1 *= -1
-
-			if not HDN.IsNode(diseaseId1):
-				HDN.AddNode(diseaseId1)
-
-			for diseaseId2 in value:
-				diseaseId2 *= -1
-
-				if diseaseId2 == diseaseId1:
-					continue
-				
-				if not HDN.IsNode(diseaseId2):
-					HDN.AddNode(diseaseId2)
-
-				if not HDN.IsEdge(diseaseId1, diseaseId2):
-					HDN.AddEdge(diseaseId1, diseaseId2)
+	print "There are " + str(G_folded.GetNodes()) + " nodes in the folded graph."
+	print "There are " + str(G_folded.GetEdges()) + " edges in the folded graph."
+	
+	return G_folded
 
 
-	print "Folded graph has a total of " + str(HDN.GetNodes()) + " nodes"
-	print "Folded graph has a total of " + str(HDN.GetEdges()) + " edges"
+def getBipartiteClasses(fname):
+	fname_split = fname.split('/')
+	folder_path = ""
+	for path_elem in range(len(fname_split) - 1):
+		folder_path = folder_path + fname_split[path_elem] + '/'
 
-	return HDN
+	source_class = np.load(folder_path + '/bipartite_source_class.npy')
+	dest_class = np.load(folder_path + '/bipartite_dest_class.npy')
+
+	return source_class, dest_class
 
 
 def loadGraph(fname):
@@ -74,7 +67,10 @@ def loadGraph(fname):
 		FIn = snap.TFIn(fname)
 		G = snap.TNEANet.Load(FIn)
 
-	return G
+	source_class, dest_class = getBipartiteClasses(fname)
+
+	return G, source_class, dest_class
+
 
 def main():
 	parser = argparse.ArgumentParser(description='Fold a bipartite graph.')
@@ -82,10 +78,10 @@ def main():
 	parser.add_argument('--reverse', type=bool, dest='reverse', default=False, help='Set to True if you want to fold in the reverse direction')
 	args = parser.parse_args()
 
-
-	G = loadGraph(args.filename)
+	G, source_class, dest_class = loadGraph(args.filename)
+	
 	if G == None: return
-	else: foldGraph(G, args.reverse)
+	else: foldGraph(G, source_class, dest_class, args.reverse)
 
 
 if __name__ == "__main__":
