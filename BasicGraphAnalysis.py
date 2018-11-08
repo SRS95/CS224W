@@ -31,7 +31,7 @@ def analyzeGraph(G):
 #            print "Number of Nodes in the largest weakly connected component:", MaxWcc.GetNodes()
 #            print "Number of Edges in the largest weakly connected component: ", MaxWcc.GetEdges()
 #            print "Cluster Coefficient: ", snap.GetClustCf(G)
-	return
+    return
 
 
 def loadGraph(fname):
@@ -50,8 +50,15 @@ def loadGraph(fname):
 		print "File does not exist"
 		return G
 
-	if is_txt_file:
-		G = snap.LoadEdgeList(fname)
+	graph_check = fname.split('/')
+	graph_check = graph_check[len(graph_check) - 2].split('_')
+	is_directed = graph_check[len(graph_check) - 1] == "directed"
+
+	if is_txt_file and is_directed:
+		G = snap.LoadEdgeList(snap.PNGraph, fname)
+
+	elif is_txt_file and not is_directed:
+		G = snap.LoadEdgeList(snap.PUNGraph, fname)
 
 	else:
 		FIn = snap.TFIn(fname)
