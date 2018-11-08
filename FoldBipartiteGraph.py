@@ -79,7 +79,7 @@ def loadGraph(fname):
 		return G
 
 	if is_txt_file:
-		G = snap.LoadEdgeList(fname)
+		G = snap.LoadEdgeList(snap.PNGraph, fname)
 
 	else:
 		FIn = snap.TFIn(fname)
