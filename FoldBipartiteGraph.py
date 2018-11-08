@@ -42,7 +42,7 @@ def foldGraph(G, source_class, dest_class, reverse):
 			for neighborIndex2 in range(neighborIndex1 + 1, curr_deg):
 				nbr2 = curr_NI.GetInNId(neighborIndex2)
 				if nbr2 in dest_class: continue
-				if not G.IsEdge(nbr1, nbr2): G.AddEdge(nbr1, nbr2)
+				if not G_folded.IsEdge(nbr1, nbr2): G_folded.AddEdge(nbr1, nbr2)
 
 	print "There are " + str(G_folded.GetNodes()) + " nodes in the folded graph."
 	print "There are " + str(G_folded.GetEdges()) + " edges in the folded graph."

@@ -67,18 +67,16 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col, bipar
 	# Make a folder to store all of the files for this graph
 	os.mkdir("../" + "graphs/" + graph_name + '_' + graph_type)
 
-	cols = [source_col, dest_col]
-
-	df = pd.read_csv(fname, usecols=cols, header=0)
-	df = df.dropna()
+	df = pd.read_csv(fname, header=0)
+	df_reduced = pd.concat([df.iloc[:, source_col], df.iloc[:, dest_col]], axis=1)
+	df_reduced = df_reduced.dropna()
 
 	# Convert to numpy array
-	data = df.values
-	print data
-	print data.shape
+	data = df_reduced.values
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
+	print nodeIdToValue
 	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create a tab separated representation of the graph
