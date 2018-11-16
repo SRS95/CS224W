@@ -7,6 +7,8 @@ import pandas as pd
 import sys
 import os
 import argparse
+from tqdm import tqdm
+
 
 
 def foldGraph(G, source_class, dest_class, reverse):
@@ -26,16 +28,9 @@ def foldGraph(G, source_class, dest_class, reverse):
 	for nodeId in source_class: 
 		G_folded.AddNode(nodeId)
 
-	progress_counter = 1
-
-	for dest_node in dest_class:
-		
-		print "On node " + str(progress_counter) + " of " + str(dest_class.shape[0])
-		progress_counter += 1
-
+	for dest_node in tqdm(dest_class):
 		curr_NI = G.GetNI(dest_node)
 		curr_deg = curr_NI.GetInDeg()
-		print "The degree of the current node is " + str(curr_deg)
 		for neighborIndex1 in range(curr_deg):
 			nbr1 = curr_NI.GetInNId(neighborIndex1)
 			if nbr1 in dest_class: continue
@@ -96,8 +91,6 @@ def saveGraph(G, fname, reverse):
 	
 	for path_elem in range(len(fname_split) - 1):
 		path = path + fname_split[path_elem] + '/'
-
-	print path
 
 	if reverse: 
 		path = path + fname_split[len(fname_split) - 2] + "_folded_reverse_order.graph"
