@@ -1,5 +1,6 @@
 import snap
 import numpy as np
+import os
 
 def loadGraph(graph_name, ):
 	file_check = graph_name.split('.')
@@ -29,7 +30,15 @@ def loadGraph(graph_name, ):
 		G = snap.LoadEdgeList(snap.PUNGraph, fname)
 
 	else:
+		check_if_folded = graph_name.split('_')
+		folded = False
+		for token in check_if_folded:
+			if token == "folded":
+				folded = True
+				break
+
 		FIn = snap.TFIn(fname)
-		G = snap.TNEANet.Load(FIn)
+		if folded: G = snap.TUNGraph.Load(FIn)
+		else: G = snap.TNEANet.Load(FIn)
 
 	return G
