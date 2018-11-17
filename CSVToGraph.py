@@ -177,7 +177,7 @@ G.Dump()
 Load and view dicts as follows:
 
 source_node_data = np.load("../" + "graphs/" + graph_name + '_' + graph_type + '/' + "auxiliary_source_node_data.npy")
-source_node_dict = source_data.item()
+source_node_dict = source_node_data.item()
 for key, val in source_node_dict:
 	print key, val
 '''
