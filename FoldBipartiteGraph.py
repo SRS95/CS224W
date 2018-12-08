@@ -7,7 +7,7 @@ import pandas as pd
 import sys
 import os
 import argparse
-from tqdm import tqdm
+#from tqdm import tqdm
 
 
 
@@ -28,7 +28,7 @@ def foldGraph(G, source_class, dest_class, reverse):
 	for nodeId in source_class: 
 		G_folded.AddNode(nodeId)
 
-	for dest_node in tqdm(dest_class):
+	for dest_node in dest_class:
 		curr_NI = G.GetNI(dest_node)
 		curr_deg = curr_NI.GetInDeg()
 		print curr_deg
