@@ -20,17 +20,8 @@ def analyzeGraph(G):
     print "Number of nodes in the network: ", nodeCount
     print "Number of Edges in the network: ", edgeCount
     print "Graph Density: ", (2.0*edgeCount)/(nodeCount*(nodeCount-1))
+    print "Diameter Metrics: ", snap.GetBfsEffDiamAll(G, 250 , False)  
     print "Cluster Coefficient: ", snap.GetClustCf(G)
-        
-#            Components = snap.TCnComV()
-#            snap.GetWccs(G, Components)
-#            number_of_wccs = 0
-#            for comp in Components: number_of_wccs+= 1
-#            print "Number of weakly connected components: ", number_of_wccs
-#            MaxWcc = snap.GetMxWcc(G)
-#            print "Number of Nodes in the largest weakly connected component:", MaxWcc.GetNodes()
-#            print "Number of Edges in the largest weakly connected component: ", MaxWcc.GetEdges()
-#            print "Cluster Coefficient: ", snap.GetClustCf(G)
     return
 
 
@@ -63,7 +54,7 @@ def loadGraph(fname):
 
 	else:
 		FIn = snap.TFIn(fname)
-		G = snap.TNEANet.Load(FIn)
+		G = snap.TUNGraph.Load(FIn)
 
 	return G
 
