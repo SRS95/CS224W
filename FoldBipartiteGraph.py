@@ -1,5 +1,9 @@
 '''
 Fold a bipartite graph.
+
+Resulting graph is a graph of just the destination nodes
+in which there's an edge betweend dest nodes A and B if they 
+have a source node in common
 '''
 import snap
 import numpy as np
@@ -7,7 +11,7 @@ import pandas as pd
 import sys
 import os
 import argparse
-#from tqdm import tqdm
+from tqdm import tqdm
 
 
 
@@ -24,20 +28,21 @@ def foldGraph(G, source_class, dest_class, reverse):
 			G.DelEdge(curr_source, curr_dest)
 			G.AddEdge(curr_dest, curr_source)
 
+
 	G_folded = snap.TUNGraph.New()
-	for nodeId in source_class: 
+	for nodeId in dest_class: 
 		G_folded.AddNode(nodeId)
 
-	for dest_node in dest_class:
-		curr_NI = G.GetNI(dest_node)
-		curr_deg = curr_NI.GetInDeg()
-		print curr_deg
+	for source_node in source_class:
+		curr_NI = G.GetNI(source_node)
+		curr_deg = curr_NI.GetOutDeg()
+
 		for neighborIndex1 in range(curr_deg):
-			nbr1 = curr_NI.GetInNId(neighborIndex1)
-			if nbr1 in dest_class: continue
+			nbr1 = curr_NI.GetOutNId(neighborIndex1)
+			if nbr1 in source_class: continue  # Handle case where bipartite structure is violated
 			for neighborIndex2 in range(neighborIndex1 + 1, curr_deg):
-				nbr2 = curr_NI.GetInNId(neighborIndex2)
-				if nbr2 in dest_class: continue
+				nbr2 = curr_NI.GetOutNId(neighborIndex2)
+				if nbr2 in source_class: continue # Handle case where bipartite structure is violated
 				if not G_folded.IsEdge(nbr1, nbr2): 
 					G_folded.AddEdge(nbr1, nbr2)
 

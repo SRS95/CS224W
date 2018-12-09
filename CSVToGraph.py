@@ -76,11 +76,10 @@ def createNormalGraph(fname, graph_name, undirected, source_col, dest_col, bipar
 
 	# Keep a mapping from node ID to original value
 	nodeIdToValue = createNodeIDs(data)
-	print nodeIdToValue
 	np.save("../" + "graphs/" + graph_name + '_' + graph_type + "/node_id_to_value", nodeIdToValue)
 
 	# Create a tab separated representation of the graph
-	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems}
+	valueToNodeId = {v: k for k, v in nodeIdToValue.iteritems()}
 
 	# If the graph is bipartite, then we want to save the two bipartite classes
 	# We also want to be aware of any edges that violate the bipartite structure
