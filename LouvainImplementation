@@ -1,0 +1,46 @@
+import snap
+import community
+import numpy as np
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+
+
+
+def convert_to_networkx(G, investors, companies, node_values):
+
+	Gx = nx.Graph()
+	for company in companies: Gx.add_node(company)
+
+	EdgeItr = G.BegEI()
+	for edge in range(G.GetEdges()):
+		Gx.add_edge(EdgeItr.GetSrcNId(), EdgeItr.GetDstNId())
+		EdgeItr.Next()
+	print "Created"
+	partition = community.best_partition(Gx)
+	print "Partitioned"
+	size = float(len(set(partition.values())))
+	print size
+	pos = nx.spring_layout(Gx)
+	count = 0.
+	for com in set(partition.values()):
+		count = count + 1.
+		list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
+		nx.draw_networkx_nodes(Gx, pos, list_nodes, node_size = 0.1, node_color = str(len(list_nodes) / float(G.GetNodes())))
+	print "Prepared drawing"
+	nx.draw_networkx_edges(Gx, pos, alpha=0.5)
+	plt.show()
+
+
+def main():
+	FIn = snap.TFIn('../graphs/investors_to_companies_directed/investors_to_companies_directed_folded.graph')
+	investors_to_companies = snap.TUNGraph.Load(FIn)
+	investors = np.load('../graphs/investors_to_companies_directed/bipartite_source_class.npy')
+	companies = np.load('../graphs/investors_to_companies_directed/bipartite_dest_class.npy')
+	node_values = np.load('../graphs/investors_to_companies_directed/node_id_to_value.npy')
+
+	G = convert_to_networkx(investors_to_companies, investors, companies, node_values)
+
+
+if __name__ == "__main__":
+	main()
