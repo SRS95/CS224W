@@ -1,6 +1,6 @@
-from LoadGraph import loadGraph
 import numpy as np
 import argparse
+import snap
 
 
 def createAndSaveEdgeList(G, fname):
@@ -33,7 +33,8 @@ def main():
 	args = parser.parse_args()
 
 	fname = args.filename
-	G = loadGraph(fname)
+	FIn = snap.TFIn(fname)
+	G = snap.TUNGraph.Load(FIn)
 	createAndSaveEdgeList(G, fname)
 
 if __name__ == "__main__":
